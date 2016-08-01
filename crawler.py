@@ -19,7 +19,16 @@ def find_all_permalinks(myurl, link):
                 nested_file = response.read().decode('windows-1251')
                 soup = BeautifulSoup(nested_file, 'html.parser')
                 if soup.find_all('a'):
-                    queue.extend([ref.get('href').replace('../','') if ref.get('href') is not None else '' for ref in soup.find_all('a')])
+                    for ref in soup.find_all('a'):
+                        if ref.get('href') is not None:
+                            if ref.get('href').find('../') > -1 or ref.get('href').find('/') > -1:
+                                queue.append(ref.get('href').replace('../', ''))
+                            else:
+                                fix_link = '/'.join(str.split(new_link, "/")[:len(str.split(new_link, "/")) -  1]).replace(myurl, "")
+                                queue.append(fix_link + "/" + ref.get('href'))
+
+
+                #    queue.extend([ref.get('href').replace('../','') if ref.get('href') is not None else '' for ref in soup.find_all('a')])
     return visited_links
 
 myurl = 'http://ukrstat.gov.ua/operativ/'
@@ -34,11 +43,11 @@ for link in trial_links:
     else:
         content = response.read().decode('windows-1251')
         soup = BeautifulSoup(content, 'html.parser')
-        if not soup.find_all('a'):
+        for table in soup.find_all('table', class_= "MsoNormalTable"):
             print(myurl + link)
             filename = soup.title.string.replace('\r\n', '')
             file = open(filename + '.txt', "w")
-            for row in soup.find_all('tr'):
+            for row in table.find_all('tr'):
                 cols = row.find_all('td')
                 entry = ''
                 for col in cols:
