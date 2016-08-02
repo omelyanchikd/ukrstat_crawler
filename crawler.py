@@ -20,9 +20,9 @@ def find_all_permalinks(myurl, link):
                 soup = BeautifulSoup(nested_file, 'html.parser')
                 if soup.find_all('a'):
                     for ref in soup.find_all('a'):
-                        if ref.get('href').find('zip') > -1:
-                            continue
                         if ref.get('href') is not None:
+                            if ref.get('href').find('zip') > -1:
+                                continue
                             if ref.get('href').find('../') > -1 or ref.get('href').find('/') > -1:
                                 queue.append(ref.get('href').replace('../', ''))
                             else:
