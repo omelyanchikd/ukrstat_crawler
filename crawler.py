@@ -47,9 +47,10 @@ for link in trial_links:
         content = response.read().decode('windows-1251','replace')
         soup = BeautifulSoup(content, 'html.parser')
         for table in soup.find_all('table', class_= "MsoNormalTable"):
-            print(soup.title.string.replace('\r\n', '') + ": " + myurl + link)
-            filename = soup.title.string.replace('\r\n', '').replace('\n', '').replace('\r','').replace('\t','') +\
-                       "_" + str(counter)
+            print(soup.title.string.replace('\r\n', '').replace('*','') + ": " + myurl + link)
+            #filename = soup.title.string.replace('\r\n', '').replace('\n', '').replace('\r','').replace('\t','').replace('*','') +\
+            #           "_" + str(counter)
+            filename = str(counter)
             counter += 1
             file = open(filename + '.txt', "w", encoding = "windows-1251", errors = "replace")
             for row in table.find_all('tr'):
