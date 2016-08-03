@@ -1,11 +1,12 @@
 from bs4 import BeautifulSoup
 import urllib
+import csv
 
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-#        if len(good_links) > 1500:
-#            break
+        if len(good_links) > 10:
+            break
         new_link = queue.pop()
         if new_link not in visited_links:
             print(new_link)
@@ -38,6 +39,8 @@ myurl = 'http://ukrstat.gov.ua/operativ/'
 trial_links = find_all_permalinks(myurl,'oper_new.html')
 counter = 1
 
+trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html"]
+
 for link in trial_links:
     try:
         response = urllib.request.urlopen(myurl + link)
@@ -52,13 +55,17 @@ for link in trial_links:
             #           "_" + str(counter)
             filename = str(counter)
             counter += 1
-            file = open(filename + '.txt', "w", encoding = "windows-1251", errors = "replace")
+            file = open(filename + '.csv', "w", encoding = "windows-1251", errors = "replace")
             for row in table.find_all('tr'):
                 cols = row.find_all('td')
                 entry = ''
                 for col in cols:
-                   entry += col.text + ' '
-                file.write(entry.replace('\n', ' ').replace('\r',' ').replace('\t',' ') + '\n')
+                    if col.has_attr('colspan'):
+                        for i in range(int(col['colspan'])):
+                            entry += col.text + ';'
+                    else:
+                        entry += col.text + ';'
+                file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
             file.close()
 
 print(counter)
