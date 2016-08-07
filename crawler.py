@@ -28,11 +28,14 @@ def find_all_permalinks(myurl, link):
                                 queue.append(ref.get('href').replace('../', ''))
                             else:
                                 fix_link = '/'.join(str.split(new_link, "/")[:len(str.split(new_link, "/")) -  1]).replace(myurl, "")
-                                queue.append(fix_link + "/" + ref.get('href'))
-
-
-                #    queue.extend([ref.get('href').replace('../','') if ref.get('href') is not None else '' for ref in soup.find_all('a')])
+                                queue.append(fix_link + "/" + ref.get('href'))                #    queue.extend([ref.get('href').replace('../','') if ref.get('href') is not None else '' for ref in soup.find_all('a')])
     return good_links
+
+def is_header(columns):
+    for column in columns:
+        if not column.has_attr('colspan') and not column.has_attr('rowspan'):
+            return False
+    return True
 
 myurl = 'http://ukrstat.gov.ua/operativ/'
 
@@ -59,10 +62,19 @@ for link in trial_links:
             for row in table.find_all('tr'):
                 cols = row.find_all('td')
                 entry = ''
-                for col in cols:
-                    if col.has_attr('colspan'):
-                        for i in range(int(col['colspan'])):
+                if is_header(cols):
+                    header = int(cols[0]['colspan'])
+                    for col in cols:
+                        if col.has_attr('rowspan'):
                             entry += col.text + ';'
+                        elif col.has_attr('colspan'):
+                            for row in header:
+                                entry += cols[row].text + ';'
+                else:
+                    for col in cols:
+                        if col.has_attr('colspan'):
+                            for i in range(int(col['colspan'])):
+                                entry += col.text + ';'
                     else:
                         entry += col.text + ';'
                 file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
