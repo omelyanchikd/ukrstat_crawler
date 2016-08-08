@@ -5,7 +5,7 @@ import csv
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-        if len(good_links) > 10:
+        if len(good_links) > 1:
             break
         new_link = queue.pop()
         if new_link not in visited_links:
@@ -59,25 +59,46 @@ for link in trial_links:
             filename = str(counter)
             counter += 1
             file = open(filename + '.csv', "w", encoding = "windows-1251", errors = "replace")
+            header = -1
+            header_names = []
+            colspans = []
             for row in table.find_all('tr'):
                 cols = row.find_all('td')
-                entry = ''
-                if is_header(cols):
-                    header = int(cols[0]['colspan'])
+                if header > 0:
+                    index = 0
+                    for col in cols:
+                        if col.has_attr('colspan'):
+                            for i in range(index, index + int(col['colspan'])):
+                                header_names[index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                        elif col.has_attr('rowspan'):
+                            header_names[colspans[index]] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                        index += 1
+                    header -= 1
+                    if header == 0:
+                        file.write(';'.join(header_names) + '\n')
+                        header = -1
+                elif is_header(cols):
+                    header_names = []
                     for col in cols:
                         if col.has_attr('rowspan'):
-                            entry += col.text + ';'
-                        elif col.has_attr('colspan'):
-                            for row in header:
-                                entry += cols[row].text + ';'
+                            header = int(col['rowspan'])
+                            break
+                    for col in cols:
+                        if col.has_attr('rowspan'):
+                            header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
+                        else:
+                            colspans.append(int(col['colspan']))
+                            for i in range(int(col['colspan'])):
+                                header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
                 else:
+                    entry = ''
                     for col in cols:
                         if col.has_attr('colspan'):
                             for i in range(int(col['colspan'])):
                                 entry += col.text + ';'
                     else:
                         entry += col.text + ';'
-                file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
+                    file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
             file.close()
 
 print(counter)
