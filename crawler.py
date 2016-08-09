@@ -62,16 +62,19 @@ for link in trial_links:
             header = -1
             header_names = []
             colspans = []
+            rowspan = None
             for row in table.find_all('tr'):
                 cols = row.find_all('td')
                 if header > 0:
                     index = 0
+                    start, end = colspans.pop(0)
                     for col in cols:
                         if col.has_attr('colspan'):
-                            for i in range(index, index + int(col['colspan'])):
-                                header_names[index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
-                        elif col.has_attr('rowspan'):
-                            header_names[colspans[index]] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                            colspans.append((start + index, start + index + int(col['colspan'])))
+                            for i in range(start + index, start + index + int(col['colspan'])):
+                                header_names[i] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                        else:
+                            header_names[start + index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
                         index += 1
                     header -= 1
                     if header == 0:
@@ -81,23 +84,42 @@ for link in trial_links:
                     header_names = []
                     for col in cols:
                         if col.has_attr('rowspan'):
-                            header = int(col['rowspan'])
+                            header = int(col['rowspan']) - 1
                             break
+                    colcount = 0
                     for col in cols:
                         if col.has_attr('rowspan'):
                             header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
                         else:
-                            colspans.append(int(col['colspan']))
+                            colspans.append((colcount, colcount + int(col['colspan'])))
                             for i in range(int(col['colspan'])):
                                 header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
+                        colcount += 1
                 else:
                     entry = ''
+                    colcount = 0
+                    if rowspan is not None:
+                        column, value, span = rowspan
+                    else:
+                        column = -1
                     for col in cols:
+                        if colcount == column:
+                            entry += value + ";"
+                            span -= 1
+                            if span == 0:
+                                rowspan = None
+                            else:
+                                rowspan = (column, value, span)
+                            colcount += 1
                         if col.has_attr('colspan'):
                             for i in range(int(col['colspan'])):
                                 entry += col.text + ';'
-                    else:
-                        entry += col.text + ';'
+                        elif col.has_attr('rowspan'):
+                            rowspan = (colcount, col.text, int(col['rowspan']) - 1)
+                            entry += col.text + ";"
+                        else:
+                            entry += col.text + ';'
+                        colcount += 1
                     file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
             file.close()
 
