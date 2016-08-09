@@ -5,7 +5,7 @@ import csv
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-        if len(good_links) > 1:
+        if len(good_links) > 10:
             break
         new_link = queue.pop()
         if new_link not in visited_links:
@@ -42,7 +42,7 @@ myurl = 'http://ukrstat.gov.ua/operativ/'
 trial_links = find_all_permalinks(myurl,'oper_new.html')
 counter = 1
 
-trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html"]
+#trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html"]
 
 for link in trial_links:
     try:
