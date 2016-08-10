@@ -5,8 +5,8 @@ import csv
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-#        if len(good_links) > 1:
-#            break
+        if len(good_links) > 150:
+            break
         new_link = queue.pop()
         if new_link not in visited_links:
             print(new_link)
@@ -42,9 +42,9 @@ myurl = 'http://ukrstat.gov.ua/operativ/'
 trial_links = find_all_permalinks(myurl,'oper_new.html')
 counter = 1
 
-#trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html"]
-#trial_links = ["operativ2013/fin/kp_ed/kp_ed_u/kp_ed_u_2012.htm"]
-#trial_links = ["operativ2014/fin/chpr/chpr_pr/chpr_pr_u/chpr_pr_0114_u.htm"]
+#trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html", "operativ2013/fin/kp_ed/kp_ed_u/kp_ed_u_2012.htm",
+#               "operativ2014/fin/chpr/chpr_pr/chpr_pr_u/chpr_pr_0114_u.htm", "operativ2009/fin/pz/pz_ed/pz_ed_u/pz_ed_1_09_u.htm"]
+
 for link in trial_links:
     try:
         response = urllib.request.urlopen(myurl + link)
@@ -68,18 +68,32 @@ for link in trial_links:
                 cols = row.find_all('td')
                 if header > 0:
                     index = 0
-                    start, end = colspans.pop(0)
+                    insert = -1
+                    for i in range(len(colspans)):
+                        if colspans[i][2] == 1:
+                            start, end, rows = colspans.pop(i)
+                            insert = i
+                            break
+                        else:
+                            colspans[i] = (colspans[i][0], colspans[i][1], colspans[i][2] - 1)
                     for col in cols:
                         if start + index == end and colspans:
-                            index -= end
-                            start, end = colspans.pop(0)
+                            index -= end - 1
+                            for i in range(insert, len(colspans)):
+                                if colspans[i][2] == 1:
+                                    start, end, rows = colspans.pop(i)
+                                    insert = i
+                                    break
+                                else:
+                                    colspans[i] = (colspans[i][0], colspans[i][1], colspans[i][2] - 1)
                         if col.has_attr('colspan'):
-                            colspans.append((start + index, start + index + int(col['colspan'])))
+                            colspans.append((start + index, start + index + int(col['colspan']), 1))
                             for i in range(start + index, start + index + int(col['colspan'])):
                                 header_names[i] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                                index += 1
                         else:
                             header_names[start + index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
-                        index += 1
+                            index += 1
                     header -= 1
                     if header == 0:
                         file.write(';'.join(header_names) + '\n')
@@ -87,18 +101,27 @@ for link in trial_links:
                 elif is_header(cols):
                     header_names = []
                     for col in cols:
-                        if col.has_attr('rowspan'):
-                            header = int(col['rowspan']) - 1
+                            if col.has_attr('rowspan'):
+                                header = int(col['rowspan']) - 1
                             break
                     colcount = 0
                     for col in cols:
                         if col.has_attr('rowspan'):
                             header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
+                            if col.has_attr('colspan'):
+                                colspans.append((colcount, colcount + int(col['colspan']), int(col['colspan'])))
+                                colcount += 1
+                                for i in range(int(col['colspan']) - 1):
+                                    header_names.append(col.text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').replace('\s',' '))
+                                    colcount += 1
+                            else:
+                                colcount += 1
+
                         else:
-                            colspans.append((colcount, colcount + int(col['colspan'])))
+                            colspans.append((colcount, colcount + int(col['colspan']), 1))
                             for i in range(int(col['colspan'])):
                                 header_names.append(col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' '))
-                        colcount += 1
+                                colcount += 1
                 else:
                     entry = ''
                     colcount = 0
