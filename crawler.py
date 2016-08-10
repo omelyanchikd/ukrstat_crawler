@@ -5,8 +5,8 @@ import csv
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-        if len(good_links) > 10:
-            break
+#        if len(good_links) > 1:
+#            break
         new_link = queue.pop()
         if new_link not in visited_links:
             print(new_link)
@@ -43,7 +43,8 @@ trial_links = find_all_permalinks(myurl,'oper_new.html')
 counter = 1
 
 #trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html"]
-
+#trial_links = ["operativ2013/fin/kp_ed/kp_ed_u/kp_ed_u_2012.htm"]
+#trial_links = ["operativ2014/fin/chpr/chpr_pr/chpr_pr_u/chpr_pr_0114_u.htm"]
 for link in trial_links:
     try:
         response = urllib.request.urlopen(myurl + link)
@@ -69,6 +70,9 @@ for link in trial_links:
                     index = 0
                     start, end = colspans.pop(0)
                     for col in cols:
+                        if start + index == end and colspans:
+                            index -= end
+                            start, end = colspans.pop(0)
                         if col.has_attr('colspan'):
                             colspans.append((start + index, start + index + int(col['colspan'])))
                             for i in range(start + index, start + index + int(col['colspan'])):
@@ -120,7 +124,7 @@ for link in trial_links:
                         else:
                             entry += col.text + ';'
                         colcount += 1
-                    file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ') + '\n')
+                    file.write(entry.replace('\n', '').replace('\r',' ').replace('\t',' ').replace('  ',' ').rstrip(';') + '\n')
             file.close()
 
 print(counter)
