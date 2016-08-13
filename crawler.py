@@ -5,8 +5,8 @@ import csv
 def find_all_permalinks(myurl, link):
     good_links, visited_links, queue = set(), set(), [link]
     while queue:
-        if len(good_links) > 150:
-            break
+#        if len(good_links) > 1:
+#            break
         new_link = queue.pop()
         if new_link not in visited_links:
             print(new_link)
@@ -43,7 +43,8 @@ trial_links = find_all_permalinks(myurl,'oper_new.html')
 counter = 1
 
 #trial_links = ["operativ2007/sz/sz_u/srp_07rik_u.html", "operativ2013/fin/kp_ed/kp_ed_u/kp_ed_u_2012.htm",
-#               "operativ2014/fin/chpr/chpr_pr/chpr_pr_u/chpr_pr_0114_u.htm", "operativ2009/fin/pz/pz_ed/pz_ed_u/pz_ed_1_09_u.htm"]
+#               "operativ2014/fin/chpr/chpr_pr/chpr_pr_u/chpr_pr_0114_u.htm", "operativ2009/fin/pz/pz_ed/pz_ed_u/pz_ed_1_09_u.htm",
+#          "operativ2012/ibd/kindj/infin_u/infin01_12u.htm"]
 
 for link in trial_links:
     try:
@@ -64,6 +65,7 @@ for link in trial_links:
             header_names = []
             colspans = []
             rowspan = None
+            start = 0
             for row in table.find_all('tr'):
                 cols = row.find_all('td')
                 if header > 0:
@@ -77,22 +79,31 @@ for link in trial_links:
                         else:
                             colspans[i] = (colspans[i][0], colspans[i][1], colspans[i][2] - 1)
                     for col in cols:
-                        if start + index == end and colspans:
-                            index -= end - 1
-                            for i in range(insert, len(colspans)):
-                                if colspans[i][2] == 1:
-                                    start, end, rows = colspans.pop(i)
-                                    insert = i
-                                    break
-                                else:
-                                    colspans[i] = (colspans[i][0], colspans[i][1], colspans[i][2] - 1)
+                        if colspans:
+                            if start + index == end:
+                                index -= end - 1
+                                for i in range(insert, len(colspans)):
+                                    if colspans[i][2] == 1:
+                                        start, end, rows = colspans.pop(i)
+                                        insert = i
+                                        break
+                                    else:
+                                        colspans[i] = (colspans[i][0], colspans[i][1], colspans[i][2] - 1)
                         if col.has_attr('colspan'):
                             colspans.append((start + index, start + index + int(col['colspan']), 1))
                             for i in range(start + index, start + index + int(col['colspan'])):
-                                header_names[i] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                                if i < len(header_names):
+                                    header_names[i] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                                else:
+                                    file.write(';'.join(header_names) + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ') + '\n')
+                                    header = 0
                                 index += 1
                         else:
-                            header_names[start + index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                            if start + index < len(header_names):
+                                header_names[start + index] += "_" + col.text.replace('\n',' ').replace('\r', ' ').replace('\t',' ').replace('\s', ' ')
+                            else:
+                                file.write(';'.join(header_names) + col.text.replace('\n', ' ').replace('\r',' ').replace('\t', ' ').replace('\s', ' ') + '\n')
+                                header = 0
                             index += 1
                     header -= 1
                     if header == 0:
